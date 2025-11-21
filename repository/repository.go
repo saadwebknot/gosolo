@@ -30,4 +30,17 @@ type GoSoloRepo interface {
 	ListGuides(ctx context.Context) ([]*models.Guide, error)
 	ListHazards(ctx context.Context) ([]*models.HazardZone, error)
 	ListWeatherAlerts(ctx context.Context) ([]*models.WeatherAlert, error)
+	// Nudge preferences management
+	UpdateNudgeSettings(ctx context.Context, travellerID int64, settings *models.NudgeSettingsInput) error
+	PauseNudges(ctx context.Context, travellerID int64, duration string) error
+	ResumeNudges(ctx context.Context, travellerID int64) error
+	// Safety check polling
+	ShouldSendSafetyNudge(ctx context.Context, travellerID int64) (bool, error)
+	MarkSafetyNudgeSent(ctx context.Context, travellerID int64, nudgeID string) error
+	// Safety check responses
+	RecordSafetyResponse(ctx context.Context, travellerID int64, response *models.SafetyCheckResponseInput, lat, lng *float64) (*models.SafetyCheckResponse, error)
+	// Emergency escalations
+	CreateEmergencyEscalation(ctx context.Context, travellerID int64, responseID *int64, lat, lng float64, address string) (*models.EmergencyEscalation, error)
+	UpdateEscalationStatus(ctx context.Context, escalationID int64, status string, notifications map[string]bool) error
+	GetActiveEscalation(ctx context.Context, travellerID int64) (*models.EmergencyEscalation, error)
 }

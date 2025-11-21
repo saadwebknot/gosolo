@@ -78,5 +78,13 @@ func goSoloRouter(handler *ph.GoSolo) http.Handler {
 	r.Get("/travellers/{travellerID:[0-9]+}/nudges", handler.FetchNudges)
 	r.Get("/travellers/{travellerID:[0-9]+}/hotel-brief", handler.HotelBrief)
 	r.Get("/travellers/{travellerID:[0-9]+}/solo-buddy", handler.FindSoloBuddy)
+	// Nudge preferences management
+	r.Put("/travellers/{travellerID:[0-9]+}/nudge-settings", handler.UpdateNudgeSettings)
+	r.Post("/travellers/{travellerID:[0-9]+}/pause-nudges", handler.PauseNudges)
+	r.Post("/travellers/{travellerID:[0-9]+}/resume-nudges", handler.ResumeNudges)
+	// Safety check polling and responses
+	r.Get("/travellers/{travellerID:[0-9]+}/poll-safety-nudges", handler.PollSafetyNudges)
+	r.Post("/travellers/{travellerID:[0-9]+}/respond-safety-check", handler.RespondToSafetyCheck)
+	r.Post("/travellers/{travellerID:[0-9]+}/confirm-escalation", handler.ConfirmEmergencyEscalation)
 	return r
 }

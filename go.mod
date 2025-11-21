@@ -1,6 +1,6 @@
 module github.com/s1s1ty/go-mysql-crud
 
-go 1.25.1
+go 1.25
 
 require (
 	github.com/go-chi/chi v1.5.5

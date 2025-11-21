@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -42,6 +43,8 @@ func (h *GoSolo) RegisterTraveller(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.repo.CreateTraveller(r.Context(), &input)
 	if err != nil {
+		// Log the actual error for debugging
+		fmt.Printf("Error creating traveller: %v\n", err)
 		respondWithError(w, http.StatusInternalServerError, "Unable to register traveller")
 		return
 	}

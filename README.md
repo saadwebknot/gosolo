@@ -31,6 +31,42 @@ chmod +x run.sh
 docker compose up --build
 ```
 
+### Render.com Deployment
+
+**Build Command:** `./run.sh`  
+**Start Command:** `./dist/go-mysql-crud`
+
+**Required Environment Variables** (set in Render dashboard):
+- `DB_HOST` - Your MySQL hostname (e.g., from PlanetScale, AWS RDS, or external service)
+- `DB_PORT` - MySQL port (usually `3306`)
+- `DB_USER` - MySQL username (defaults to `root` if not set)
+- `DB_PASS` - MySQL password
+- `DB_NAME` - Database name (e.g., `go-mysql-crud`)
+
+**Note:** Render doesn't provide managed MySQL. You'll need:
+- An external MySQL service (PlanetScale, AWS RDS, etc.), OR
+- A separate Render service running MySQL via Docker
+
+**Quick PlanetScale Setup (Recommended - 5 minutes):**
+1. Sign up at https://planetscale.com (free tier available)
+2. Create a new database (e.g., `gosolo`)
+3. Go to "Connect" → copy the connection string
+4. It looks like: `mysql://USER:PASS@HOST:PORT/DATABASE?ssl-mode=REQUIRED`
+5. Extract values and set in Render:
+   - `DB_HOST` = the hostname (e.g., `aws.connect.psdb.cloud`)
+   - `DB_PORT` = `3306` (usually)
+   - `DB_USER` = username from connection string
+   - `DB_PASS` = password from connection string
+   - `DB_NAME` = database name
+6. Run your `db/init.sql` schema via PlanetScale's SQL editor or CLI
+
+**Local Docker Compose defaults** (for reference):
+- `DB_HOST=mysql` (service name)
+- `DB_PORT=3306`
+- `DB_USER=root`
+- `DB_PASS=12345`
+- `DB_NAME=go-mysql-crud`
+
 ### Database Maintenance (create/drop tables manually)
 Run SQL through the MySQL container:
 ```bash

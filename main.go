@@ -2,16 +2,21 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/joho/godotenv"
 	"github.com/s1s1ty/go-mysql-crud/driver"
 	ph "github.com/s1s1ty/go-mysql-crud/handler/http"
 )
 
 func main() {
+	// Load .env file if it exists (ignore errors for production where env vars are set directly)
+	_ = godotenv.Load()
+
 	dbName := os.Getenv("DB_NAME")
 	dbPass := os.Getenv("DB_PASS")
 	dbHost := os.Getenv("DB_HOST")
@@ -21,10 +26,13 @@ func main() {
 		dbUser = "root"
 	}
 
+	if dbHost == "" || dbPort == "" || dbUser == "" || dbPass == "" || dbName == "" {
+		log.Fatal("Missing required database environment variables. Check DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME")
+	}
+
 	connection, err := driver.ConnectSQL(dbHost, dbPort, dbUser, dbPass, dbName)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
+		log.Fatalf("Database connection failed: %v\nCheck your DB credentials (DB_HOST=%s, DB_PORT=%s, DB_USER=%s, DB_NAME=%s)", err, dbHost, dbPort, dbUser, dbName)
 	}
 
 	r := chi.NewRouter()

@@ -40,8 +40,14 @@ func main() {
 		rt.Mount("/gosolo", goSoloRouter(goSoloHandler))
 	})
 
-	fmt.Println("Server listen at :8005")
-	http.ListenAndServe(":8005", r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8005"
+	}
+
+	addr := fmt.Sprintf(":%s", port)
+	fmt.Printf("Server listen at %s\n", addr)
+	http.ListenAndServe(addr, r)
 }
 
 // A completely separate router for posts routes

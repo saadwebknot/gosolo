@@ -14,5 +14,9 @@ go mod download
 echo "Building linux binary…"
 go build -v -o dist/go-mysql-crud
 
-echo "Building docker image…"
-docker build -t go-mysql-crud .
+if command -v docker >/dev/null 2>&1; then
+  echo "Building docker image…"
+  docker build -t go-mysql-crud .
+else
+  echo "Docker CLI not found. Skipping image build (below environments typically provide their own runtime)."
+fi

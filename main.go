@@ -75,6 +75,7 @@ func goSoloRouter(handler *ph.GoSolo) http.Handler {
 	r.Post("/travellers", handler.RegisterTraveller)
 	r.Post("/travellers/{travellerID:[0-9]+}/location", handler.UpdateLocation)
 	r.Post("/travellers/{travellerID:[0-9]+}/sos", handler.TriggerSOS)
+	r.Post("/travellers/{travellerID:[0-9]+}/sos-button", handler.TriggerSOSButton)
 	r.Get("/travellers/{travellerID:[0-9]+}/nudges", handler.FetchNudges)
 	r.Get("/travellers/{travellerID:[0-9]+}/hotel-brief", handler.HotelBrief)
 	r.Get("/travellers/{travellerID:[0-9]+}/solo-buddy", handler.FindSoloBuddy)

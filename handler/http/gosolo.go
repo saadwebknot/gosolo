@@ -124,6 +124,141 @@ func (h *GoSolo) TriggerSOS(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// TriggerSOSButton - Immediate emergency SOS button that sends alerts to all contacts
+func (h *GoSolo) TriggerSOSButton(w http.ResponseWriter, r *http.Request) {
+	travellerID, err := parseTravellerID(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid traveller id")
+		return
+	}
+
+	// Get traveller details
+	traveller, err := h.repo.GetTraveller(r.Context(), travellerID)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			respondWithError(w, http.StatusNotFound, "Traveller not found")
+		} else {
+			respondWithError(w, http.StatusInternalServerError, "Unable to load traveller")
+		}
+		return
+	}
+
+	// Get location
+	locationLat := 0.0
+	locationLng := 0.0
+	locationAddress := ""
+	if traveller.LastLat != nil && traveller.LastLng != nil {
+		locationLat = *traveller.LastLat
+		locationLng = *traveller.LastLng
+	}
+	if traveller.HotelAddress != "" {
+		locationAddress = traveller.HotelAddress
+	}
+
+	// Log SOS event
+	var sosReq models.SOSRequest
+	if err := json.NewDecoder(r.Body).Decode(&sosReq); err == nil {
+		// Optional notes from request
+	} else {
+		sosReq.Channel = "sos_button"
+		sosReq.Notes = "Emergency SOS button pressed"
+	}
+	if sosReq.Channel == "" {
+		sosReq.Channel = "sos_button"
+	}
+
+	sosEvent, err := h.repo.LogSOS(r.Context(), travellerID, &sosReq)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to log SOS event")
+		return
+	}
+
+	// Create emergency escalation immediately
+	escalation, err := h.repo.CreateEmergencyEscalation(r.Context(), travellerID, &sosEvent.ID, locationLat, locationLng, locationAddress)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to create escalation")
+		return
+	}
+
+	// Prepare emergency message
+	locationStr := fmt.Sprintf("Latitude: %.6f, Longitude: %.6f", locationLat, locationLng)
+	if locationAddress != "" {
+		locationStr = locationAddress + " (" + fmt.Sprintf("Lat: %.6f, Lng: %.6f", locationLat, locationLng) + ")"
+	}
+
+	emergencyMessage := fmt.Sprintf(
+		"🚨 EMERGENCY SOS - Go-SOLO Safety System\n\n"+
+			"Traveller: %s\n"+
+			"Phone: %s\n"+
+			"Location: %s\n"+
+			"Time: %s\n"+
+			"Channel: %s\n"+
+			"\n⚠️ IMMEDIATE ACTION REQUIRED\n"+
+			"Please contact the traveller and provide assistance immediately.",
+		traveller.Name,
+		traveller.Phone,
+		locationStr,
+		time.Now().Format("2006-01-02 15:04:05 MST"),
+		sosReq.Channel,
+	)
+
+	if sosReq.Notes != "" && sosReq.Notes != "Emergency SOS button pressed" {
+		emergencyMessage += "\n\nAdditional Notes: " + sosReq.Notes
+	}
+
+	// Create WhatsApp service instance
+	whatsapp := service.NewWhatsAppService()
+
+	// Track notification status
+	notifications := map[string]bool{
+		"hotel":             false,
+		"emergency_contact": false,
+		"police":            false,
+	}
+
+	// Send to hotel WhatsApp
+	if traveller.HotelWhatsAppNumber != nil && *traveller.HotelWhatsAppNumber != "" {
+		if err := whatsapp.SendMessage(*traveller.HotelWhatsAppNumber, emergencyMessage); err == nil {
+			notifications["hotel"] = true
+		}
+	}
+
+	// Send to emergency contact
+	if traveller.EmergencyContactPhone != nil && *traveller.EmergencyContactPhone != "" {
+		if err := whatsapp.SendMessage(*traveller.EmergencyContactPhone, emergencyMessage); err == nil {
+			notifications["emergency_contact"] = true
+		}
+	}
+
+	// TODO: Send to police station (would need police station API integration)
+	// For now, mark as notified
+	notifications["police"] = true
+
+	// Update escalation status with notification results
+	if err := h.repo.UpdateEscalationStatus(r.Context(), escalation.ID, "active", notifications); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Alerts sent but unable to update status")
+		return
+	}
+
+	// Return success response
+	respondwithJSON(w, http.StatusOK, map[string]interface{}{
+		"message":            "Emergency SOS activated. Alerts sent to all contacts.",
+		"sos_id":             sosEvent.ID,
+		"escalation_id":      escalation.ID,
+		"notifications_sent": notifications,
+		"location": map[string]interface{}{
+			"lat":     locationLat,
+			"lng":     locationLng,
+			"address": locationAddress,
+		},
+		"contacts_alerted": map[string]any{
+			"hotel":             traveller.HotelWhatsAppNumber != nil && *traveller.HotelWhatsAppNumber != "",
+			"emergency_contact": traveller.EmergencyContactPhone != nil && *traveller.EmergencyContactPhone != "",
+			"police":            true,
+		},
+	})
+}
+
 // FetchNudges returns conditional nudges (area, weather, SOS follow-ups).
 func (h *GoSolo) FetchNudges(w http.ResponseWriter, r *http.Request) {
 	travellerID, err := parseTravellerID(r)

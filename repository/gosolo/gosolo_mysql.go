@@ -464,3 +464,21 @@ func (m *mysqlGoSoloRepo) GetActiveEscalation(ctx context.Context, travellerID i
 
 	return escalation, nil
 }
+
+// UpdateEmergencyContacts updates emergency contact information
+func (m *mysqlGoSoloRepo) UpdateEmergencyContacts(ctx context.Context, travellerID int64, contacts *models.EmergencyContactUpdateInput) error {
+	query := `
+		UPDATE travellers 
+		SET emergency_contact_name=COALESCE(?, emergency_contact_name),
+		    emergency_contact_phone=COALESCE(?, emergency_contact_phone),
+		    hotel_whatsapp_number=COALESCE(?, hotel_whatsapp_number)
+		WHERE id=?
+	`
+	_, err := m.Conn.ExecContext(ctx, query,
+		contacts.EmergencyContactName,
+		contacts.EmergencyContactPhone,
+		contacts.HotelWhatsAppNumber,
+		travellerID,
+	)
+	return err
+}

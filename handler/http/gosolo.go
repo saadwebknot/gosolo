@@ -277,16 +277,8 @@ func (h *GoSolo) FetchNudges(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if nudges are disabled or paused
-	now := time.Now()
-	if traveller.NudgesDisabled {
-		respondwithJSON(w, http.StatusOK, []interface{}{})
-		return
-	}
-	if traveller.NudgesPausedUntil != nil && traveller.NudgesPausedUntil.After(now) {
-		respondwithJSON(w, http.StatusOK, []interface{}{})
-		return
-	}
+	// NOTE: Conditional nudges (weather, area, SOS) continue even when paused
+	// Pause status only affects safety check polling (poll-safety-nudges endpoint)
 
 	var nudges []*models.Nudge
 
@@ -701,6 +693,46 @@ func (h *GoSolo) ConfirmEmergencyEscalation(w http.ResponseWriter, r *http.Reque
 		"message":            "Emergency alerts sent successfully",
 		"escalation_id":      escalation.ID,
 		"notifications_sent": notifications,
+	})
+}
+
+// UpdateEmergencyContacts updates emergency contact information for a traveller
+func (h *GoSolo) UpdateEmergencyContacts(w http.ResponseWriter, r *http.Request) {
+	travellerID, err := parseTravellerID(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid traveller id")
+		return
+	}
+
+	var input models.EmergencyContactUpdateInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+
+	// At least one field must be provided
+	if input.EmergencyContactName == nil && input.EmergencyContactPhone == nil && input.HotelWhatsAppNumber == nil {
+		respondWithError(w, http.StatusBadRequest, "At least one field must be provided")
+		return
+	}
+
+	if err := h.repo.UpdateEmergencyContacts(r.Context(), travellerID, &input); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to update emergency contacts")
+		return
+	}
+
+	// Get updated traveller to return current values
+	traveller, err := h.repo.GetTraveller(r.Context(), travellerID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Updated but unable to fetch updated data")
+		return
+	}
+
+	respondwithJSON(w, http.StatusOK, map[string]interface{}{
+		"message":                 "Emergency contacts updated successfully",
+		"emergency_contact_name":  traveller.EmergencyContactName,
+		"emergency_contact_phone": traveller.EmergencyContactPhone,
+		"hotel_whatsapp_number":   traveller.HotelWhatsAppNumber,
 	})
 }
 

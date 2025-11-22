@@ -43,4 +43,6 @@ type GoSoloRepo interface {
 	CreateEmergencyEscalation(ctx context.Context, travellerID int64, responseID *int64, lat, lng float64, address string) (*models.EmergencyEscalation, error)
 	UpdateEscalationStatus(ctx context.Context, escalationID int64, status string, notifications map[string]bool) error
 	GetActiveEscalation(ctx context.Context, travellerID int64) (*models.EmergencyEscalation, error)
+	// Update emergency contacts
+	UpdateEmergencyContacts(ctx context.Context, travellerID int64, contacts *models.EmergencyContactUpdateInput) error
 }

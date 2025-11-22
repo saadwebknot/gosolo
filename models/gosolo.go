@@ -165,3 +165,10 @@ type EmergencyEscalationConfirmationInput struct {
 	EscalationID int64 `json:"escalation_id"`
 	Confirm      bool  `json:"confirm"` // true = yes, proceed with escalation
 }
+
+// EmergencyContactUpdateInput for updating emergency contact information
+type EmergencyContactUpdateInput struct {
+	EmergencyContactName  *string `json:"emergency_contact_name,omitempty"`
+	EmergencyContactPhone *string `json:"emergency_contact_phone,omitempty"`
+	HotelWhatsAppNumber   *string `json:"hotel_whatsapp_number,omitempty"`
+}

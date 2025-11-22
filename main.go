@@ -83,6 +83,8 @@ func goSoloRouter(handler *ph.GoSolo) http.Handler {
 	r.Put("/travellers/{travellerID:[0-9]+}/nudge-settings", handler.UpdateNudgeSettings)
 	r.Post("/travellers/{travellerID:[0-9]+}/pause-nudges", handler.PauseNudges)
 	r.Post("/travellers/{travellerID:[0-9]+}/resume-nudges", handler.ResumeNudges)
+	// Emergency contacts management
+	r.Put("/travellers/{travellerID:[0-9]+}/emergency-contacts", handler.UpdateEmergencyContacts)
 	// Safety check polling and responses
 	r.Get("/travellers/{travellerID:[0-9]+}/poll-safety-nudges", handler.PollSafetyNudges)
 	r.Post("/travellers/{travellerID:[0-9]+}/respond-safety-check", handler.RespondToSafetyCheck)
